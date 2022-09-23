@@ -59,7 +59,6 @@ def search_markt(brand, memory):
         model = input("Enter the SPECIFIC model of the smartphone (eg. galaxy a52 || galaxy z flip3 5g  || iphone 14 pro): ")
 
         model_f = model.replace(" ", "-").lower()
-        print(media_markt(brand, model_f, memory))
         markt = requests.get(media_markt(brand, model_f, memory), headers={"User-Agent": ALLOW_ACCESS})
 
         if markt.status_code == 200:
@@ -175,7 +174,6 @@ def search_expert(model, brand, memory):
             pages = 1
 
         for page in range(1, pages+1):
-            print(media_expert(brand, model, memory, page))
             expert = requests.get(media_expert(brand, model, memory, page), headers={"User-Agent": ALLOW_ACCESS})
             soup = BeautifulSoup(expert.content, "html.parser")
 
@@ -223,8 +221,6 @@ def search_euro(model, memory):
             pages = 1
 
         for page in range(1, pages + 1):
-            print(rtv_euro(model, memory, page))
-
             euro = requests.get(rtv_euro(model, memory, page), headers={"User-Agent": ALLOW_ACCESS})
             soup = BeautifulSoup(euro.content, "html.parser")
             
@@ -276,7 +272,7 @@ def add_to_worksheet(list, worksheet):
         row += 1
 
 def save_search_excel(filename):
-    workbook = xlsxwriter.Workbook(f"./smartphone_price_comparer/excel_files/{filename}.xlsx")
+    workbook = xlsxwriter.Workbook(f"./Smartphone_price_comparer/excel_files/{filename}.xlsx")
     worksheet = workbook.add_worksheet()
     worksheet.set_column(0, 0, 65)
 
