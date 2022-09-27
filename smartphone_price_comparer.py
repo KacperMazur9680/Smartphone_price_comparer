@@ -20,13 +20,13 @@ def media_markt(brand, model, memory):
         memo = "16-01-gb-32-gb"
     else:
         memo = ""
-    return f"https://mediamarkt.pl/telefony-i-smartfony/smartfony/wszystkie-smartfony.{brand}/&pamiec-wbudowana={memo}&model={model}"
+    model_f = model.replace(" ", "-").lower() 
+    return f"https://mediamarkt.pl/telefony-i-smartfony/smartfony/wszystkie-smartfony.{brand}/&pamiec-wbudowana={memo}&model={model_f}"
 
 def info_from_markt(phone_names, model, memory, brand):
     phones = {}
     findings = []
     link = media_markt(brand, model, memory)
-
     findings.append([link, "Media Markt"])
 
     for info in phone_names:   
@@ -55,11 +55,9 @@ def search_markt(brand, memory):
         print()
         shop = "Media Markt"
         print(shop)
-        
         model = input("Enter the SPECIFIC model of the smartphone (eg. galaxy a52 || galaxy z flip3 5g  || iphone 14 pro): ")
 
-        model_f = model.replace(" ", "-").lower()
-        markt = requests.get(media_markt(brand, model_f, memory), headers={"User-Agent": ALLOW_ACCESS})
+        markt = requests.get(media_markt(brand, model, memory), headers={"User-Agent": ALLOW_ACCESS})
 
         if markt.status_code == 200:
             soup = BeautifulSoup(markt.content, "html.parser")
@@ -133,12 +131,11 @@ def list_from_models_expert_or_euro(phones, model, memory):
 
     return models
 
-def info_expert_or_euro(phones, model_spec, model, memory, shop, page, brand=""):
+def info_expert_or_euro(phones, model_spec, model, memory, shop, page, brand):
     if shop == "Media Expert":
         link = media_expert(brand, model, memory, page)
     else:
         link = rtv_euro(model, memory, page)
-
     findings = []
     
     findings.append([link, shop])
@@ -193,7 +190,7 @@ def search_expert(model, brand, memory):
 
             model_spec = input(f"Which model would you like: {brand} {model} [{models}]: ")
 
-            return info_expert_or_euro(phones, model_spec, model, memory, shop, page, brand="")
+            return info_expert_or_euro(phones, model_spec, model, memory, shop, page, brand)
 
     else:
         print(f"ERROR {pages_raw.status_code}")
@@ -272,7 +269,7 @@ def add_to_worksheet(list, worksheet):
         row += 1
 
 def save_search_excel(filename):
-    workbook = xlsxwriter.Workbook(f"./Smartphone_price_comparer/excel_files/{filename}.xlsx")
+    workbook = xlsxwriter.Workbook(f"./excel_files/{filename}.xlsx")
     worksheet = workbook.add_worksheet()
     worksheet.set_column(0, 0, 65)
 
