@@ -292,6 +292,17 @@ def save_search_excel(filename):
     list_euro = search_euro(model, memory)
     add_to_worksheet(list_euro, worksheet)
 
+    green_format = workbook.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'})
+
+    prices = [price for price in list_euro.extend(list_expert.extend(list_markt)) if isinstance(price, int)]
+    min_price = min(prices)
+
+    worksheet.conditional_format(f"$B$1:$B${row-1}", {
+        "type": "cell", 
+        "criteria": "==", 
+        "value": min_price, 
+        "format": green_format
+        })
     workbook.close()
 
 
