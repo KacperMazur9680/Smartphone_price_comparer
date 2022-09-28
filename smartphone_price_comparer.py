@@ -27,7 +27,6 @@ def info_from_markt(phone_names, model, memory, brand):
     phones = {}
     findings = []
     link = media_markt(brand, model, memory)
-    findings.append([link, "Media Markt"])
 
     for info in phone_names:   
         pricing = info.find_next("div", {"class": "pricing"})
@@ -46,9 +45,11 @@ def info_from_markt(phone_names, model, memory, brand):
         if str(memory) in key:
             findings.append([key, value])
 
-    if len(phones) <= 0:
-        findings.append(f"{model} {memory} GB not found")
-
+    if len(findings) <= 0:
+        print(f"{model} {memory} GB not found")
+    else:
+        findings.insert(0, [link, "Media Markt"])
+        
     return findings
 
 def search_markt(brand, memory):
@@ -58,7 +59,7 @@ def search_markt(brand, memory):
         model = input("Enter the SPECIFIC model of the smartphone (eg. galaxy a52 || galaxy z flip3 5g  || iphone 14 pro): ")
 
         markt = requests.get(media_markt(brand, model, memory), headers={"User-Agent": ALLOW_ACCESS})
-
+        
         if markt.status_code == 200:
             soup = BeautifulSoup(markt.content, "html.parser")
             phone_names = soup.find_all("h2", {"class": "title"})
@@ -188,9 +189,12 @@ def search_expert(model, brand, memory):
 
             models = list_from_models_expert_or_euro(phones, model, memory)
 
-            model_spec = input(f"Which model would you like: {brand} {model} [{models}]: ")
+            if len(models) <= 0:
+                break
 
-            return info_expert_or_euro(phones, model_spec, model, memory, shop, page, brand)
+            model_spec = input(f"Which model would you like: {model} [{models}]: ")
+
+            return info_expert_or_euro(phones, model_spec, model, memory, shop, page, brand="")
 
     else:
         print(f"ERROR {pages_raw.status_code}")
