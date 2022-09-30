@@ -256,6 +256,17 @@ def search_euro(model, memory):
         print(f"ERROR {pages_raw.status_code}")        
 
 
+def phones_values(nested_list):
+    list_prices = []
+    try:
+        for phone in nested_list:
+            if isinstance(phone[1], int):
+                list_prices.append(phone[1])
+    except TypeError:
+        list_prices = [0]
+    finally:
+        return list_prices
+
 def add_to_worksheet(list, worksheet):
     global row
     global col
@@ -273,28 +284,36 @@ def add_to_worksheet(list, worksheet):
         row += 1
 
 def save_search_excel(filename):
+    prices = []
     workbook = xlsxwriter.Workbook(f"./excel_files/{filename}.xlsx")
     worksheet = workbook.add_worksheet()
     worksheet.set_column(0, 0, 65)
 
     memory = int(input("Enter the memory you are interested in [GB]: "))
     brand = input("Enter the brand of the smartphone: ")
+    
     list_markt = search_markt(brand, memory)
-
     add_to_worksheet(list_markt, worksheet)
+    prices_markt = phones_values(list_markt)
 
     print()
 
     model = input("Enter the GENERAL model (eg. galaxy s || z flip || fold || iphone 14): ")
     list_expert = search_expert(model, brand, memory)
     add_to_worksheet(list_expert, worksheet)
+    prices_expert = phones_values(list_expert)
 
     list_euro = search_euro(model, memory)
     add_to_worksheet(list_euro, worksheet)
+    prices_euro = phones_values(list_euro)
 
     green_format = workbook.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'})
 
-    prices = [price for price in list_euro.extend(list_expert.extend(list_markt)) if isinstance(price, int)]
+
+    prices.extend(prices_markt)
+    prices.extend(prices_expert)
+    prices.extend(prices_euro)
+
     min_price = min(prices)
 
     worksheet.conditional_format(f"$B$1:$B${row-1}", {
