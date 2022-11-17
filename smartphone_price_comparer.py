@@ -3,7 +3,19 @@ import requests
 import re
 import xlsxwriter
 
-ALLOW_ACCESS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+ALLOW_ACCESS = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Firefox/98.0",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+    }
 
 col = 0
 row = 0
@@ -21,6 +33,8 @@ def media_markt(brand, model, memory):
     else:
         memo = ""
     model_f = model.replace(" ", "-").lower() 
+    if model_f[-1] != model[-1]:
+        model_f = model_f[:-1]
     return f"https://mediamarkt.pl/telefony-i-smartfony/smartfony/wszystkie-smartfony.{brand}/&pamiec-wbudowana={memo}&model={model_f}"
 
 def info_from_markt(phone_names, model, memory, brand):
@@ -58,7 +72,8 @@ def search_markt(brand, memory):
         print(shop)
         model = input("Enter the SPECIFIC model of the smartphone (eg. galaxy a52 || galaxy z flip3 5g  || iphone 14 pro): ")
 
-        markt = requests.get(media_markt(brand, model, memory), headers={"User-Agent": ALLOW_ACCESS})
+        markt = requests.get(media_markt(brand, model, memory), headers=ALLOW_ACCESS)
+        print(media_markt(brand, model, memory))
         
         if markt.status_code == 200:
             soup = BeautifulSoup(markt.content, "html.parser")
@@ -72,6 +87,8 @@ def search_markt(brand, memory):
 
 def media_expert(brand, model, memory, page):
     model_f = model.replace(" ", "-").lower()
+    if model_f[-1] != model[-1]:
+        model_f = model_f[:-1]
     return f"https://www.mediaexpert.pl/smartfony-i-zegarki/smartfony/pamiec-wbudowana-gb_{memory}/popularne-serie_{brand}-{model_f}?page={page}"
 
 def search_expert_phones(soup, frst_phone_name, frst_phone_price):
@@ -160,7 +177,8 @@ def search_expert(model, brand, memory):
     print(shop)
 
     model_f = model.replace(" ", "-").lower()
-    pages_raw = requests.get(f"https://www.mediaexpert.pl/smartfony-i-zegarki/smartfony/pamiec-wbudowana-gb_{memory}/popularne-serie_{brand}-{model_f}")
+
+    pages_raw = requests.get(f"https://www.mediaexpert.pl/smartfony-i-zegarki/smartfony/pamiec-wbudowana-gb_{memory}/popularne-serie_{brand}-{model_f}", headers=ALLOW_ACCESS )
 
     if pages_raw.status_code == 200:
         pages_soup = BeautifulSoup(pages_raw.content, "html.parser")
@@ -172,7 +190,7 @@ def search_expert(model, brand, memory):
             pages = 1
 
         for page in range(1, pages+1):
-            expert = requests.get(media_expert(brand, model, memory, page), headers={"User-Agent": ALLOW_ACCESS})
+            expert = requests.get(media_expert(brand, model, memory, page), headers=ALLOW_ACCESS)
             soup = BeautifulSoup(expert.content, "html.parser")
 
             frst_phone = soup.find("div", {"class": "offers-list"})
@@ -202,6 +220,8 @@ def search_expert(model, brand, memory):
 
 def rtv_euro(model, memory, page):
     model_f = model.replace(" ", "-").lower()
+    if model_f[-1] != model[-1]:
+        model_f = model_f[:-1]
     return f"https://www.euro.com.pl/telefony-komorkowe,pamiec-wbudowana-gb-!-{memory},seria!{model_f},strona-{page}.bhtml"
 
 def search_euro(model, memory):
@@ -222,7 +242,7 @@ def search_euro(model, memory):
             pages = 1
 
         for page in range(1, pages + 1):
-            euro = requests.get(rtv_euro(model, memory, page), headers={"User-Agent": ALLOW_ACCESS})
+            euro = requests.get(rtv_euro(model, memory, page), headers=ALLOW_ACCESS)
             soup = BeautifulSoup(euro.content, "html.parser")
             
             names = []
@@ -267,6 +287,13 @@ def phones_values(nested_list):
     finally:
         return list_prices
 
+def check_if_empty(list_, sheet):
+    if list_ is None:
+        pass
+    else:
+        add_to_worksheet(list_, sheet)
+
+
 def add_to_worksheet(list, worksheet):
     global row
     global col
@@ -293,18 +320,19 @@ def save_search_excel(filename):
     brand = input("Enter the brand of the smartphone: ")
     
     list_markt = search_markt(brand, memory)
-    add_to_worksheet(list_markt, worksheet)
+   
+    check_if_empty(list_markt, worksheet)
     prices_markt = phones_values(list_markt)
 
     print()
 
     model = input("Enter the GENERAL model (eg. galaxy s || z flip || fold || iphone 14): ")
     list_expert = search_expert(model, brand, memory)
-    add_to_worksheet(list_expert, worksheet)
+    check_if_empty(list_expert, worksheet)
     prices_expert = phones_values(list_expert)
 
     list_euro = search_euro(model, memory)
-    add_to_worksheet(list_euro, worksheet)
+    check_if_empty(list_euro, worksheet)
     prices_euro = phones_values(list_euro)
 
     green_format = workbook.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'})
@@ -313,6 +341,10 @@ def save_search_excel(filename):
     prices.extend(prices_markt)
     prices.extend(prices_expert)
     prices.extend(prices_euro)
+
+    for price in prices:
+        if price == 0:
+            prices.remove(price)
 
     min_price = min(prices)
 
